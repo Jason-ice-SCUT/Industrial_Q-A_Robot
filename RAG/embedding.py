@@ -32,6 +32,7 @@ def embed_text(text: str, for_query: bool) -> list[float]:
         assert embeddings_list
         assert embeddings_list[0]
         return embeddings_list[0]
+        
     else:
         embeddings = model.encode_corpus([text])
         embeddings_list = embeddings.tolist()
@@ -39,9 +40,28 @@ def embed_text(text: str, for_query: bool) -> list[float]:
         assert embeddings_list
         assert embeddings_list[0]
         return embeddings_list[0]
-  
         
+  
+def query_db(query: str) -> list[dict]:
+    embedding = embed_text(query, for_query=True)
+    results = chromadb_collection.query(
+        query_embeddings= embedding,
+        n_results=5
+    )
+    assert results['documents']
+    return results['documents'][0]
 
 if __name__ == "__main__":
-   create_db()
+   query = "电动平衡车的安全要求是什么？"
+   #create_db()
+   chunks: list[str] = query_db(query)
 
+   prompt = "Please answer the question based on the following context:\n"
+   prompt += f"Query: {query}\n"
+   prompt += "Context:\n"   
+   for c in chunks:
+       prompt += c + "\n"
+       prompt += "-----\n"
+
+   print(prompt)
+   
