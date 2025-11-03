@@ -2,12 +2,16 @@ import os_mirror.os_mirror # 个人构建的hf镜像环境
 import chunk_traditional as chunk_t
 import chromadb
 from FlagEmbedding import FlagAutoModel
-
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 EMBEDDING_MODEL = FlagAutoModel.from_finetuned('BAAI/bge-base-en-v1.5',
                                       query_instruction_for_retrieval="Represent this sentence for searching relevant passages:",
                                       use_fp16=True)
-#LLM_MODEL = 
+
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-0.6B")
+LLM_MODEL = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-0.6B"
+                                                 ,torch_dtype="auto",
+                                                  device_map="auto")
 
 chromadb_client = chromadb.PersistentClient("./chroma.db")
 chromadb_collection = chromadb_client.get_or_create_collection("IndustrialQA_DB")
@@ -51,17 +55,5 @@ def query_db(query: str) -> list[dict]:
     assert results['documents']
     return results['documents'][0]
 
-if __name__ == "__main__":
-   query = "电动平衡车的安全要求是什么？"
-   #create_db()
-   chunks: list[str] = query_db(query)
-
-   prompt = "Please answer the question based on the following context:\n"
-   prompt += f"Query: {query}\n"
-   prompt += "Context:\n"   
-   for c in chunks:
-       prompt += c + "\n"
-       prompt += "-----\n"
-
-   print(prompt)
-   
+#if __name__ == "__main__":
+    #create_db()
