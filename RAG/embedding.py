@@ -1,6 +1,7 @@
 import os_mirror.os_mirror # 个人构建的hf镜像环境
-import chunk_traditional as chunk_t
+from . import chunk_traditional as chunk_t
 import chromadb
+import os
 from FlagEmbedding import FlagAutoModel
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
@@ -8,12 +9,11 @@ EMBEDDING_MODEL = FlagAutoModel.from_finetuned('BAAI/bge-base-en-v1.5',
                                       query_instruction_for_retrieval="Represent this sentence for searching relevant passages:",
                                       use_fp16=True)
 
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-0.6B")
-LLM_MODEL = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-0.6B"
-                                                 ,torch_dtype="auto",
-                                                  device_map="auto")
+# 获取项目根目录（RAG 目录的上一级）
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+chroma_db_path = os.path.join(project_root, "chroma.db")
 
-chromadb_client = chromadb.PersistentClient("./chroma.db")
+chromadb_client = chromadb.PersistentClient(chroma_db_path)
 chromadb_collection = chromadb_client.get_or_create_collection("IndustrialQA_DB")
 
 def create_db() ->None:
@@ -46,14 +46,15 @@ def embed_text(text: str, for_query: bool) -> list[float]:
         return embeddings_list[0]
         
   
-def query_db(query: str) -> list[dict]:
+def query_db(query: str) -> list[str]:
     embedding = embed_text(query, for_query=True)
     results = chromadb_collection.query(
-        query_embeddings= embedding,
+        query_embeddings=[embedding],  # ChromaDB 需要列表格式
         n_results=5
     )
     assert results['documents']
-    return results['documents'][0]
+    assert results['documents'][0]  # 确保有结果
+    return results['documents'][0]  # 返回第一个查询的结果列表
 
 #if __name__ == "__main__":
     #create_db()

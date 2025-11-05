@@ -1,7 +1,6 @@
 import os_mirror.os_mirror 
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import chunk_traditional as chunk_t
-import embedding 
+from . import embedding 
 
 
 
@@ -26,8 +25,9 @@ def QA_Generate(query: str) ->str:
         add_generation_prompt=True,
         enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
     )
-    # Generate text using the language model. LLM_MODEL.device is the device to use for the model.
-    model_inputs = tokenizer([text], return_tensors="pt").to(LLM_MODEL.device)
+    # Generate text using the language model. Get device from model parameters
+    device = next(LLM_MODEL.parameters()).device
+    model_inputs = tokenizer([text], return_tensors="pt").to(device)
     # conduct text completion
     generated_ids = LLM_MODEL.generate(
         **model_inputs,
